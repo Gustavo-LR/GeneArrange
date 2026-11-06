@@ -183,9 +183,6 @@ GeneArrange creates `genearrange_results/` unless `-o` selects another directory
 
 The diagrams are **schematic, not proportional to base-pair coordinates**. Standard views display named gene arrows; compact views merge adjacent same-strand features and show gene identity through colored/texture stripes. Each repeated copy occupies its actual relative place among neighboring annotations. Styles are consistent across all figures of one run. The palette supports 34 vector texture families combined with 12 colors, for 408 base combinations before density variations. Unknown-strand features use a neutral rectangle.
 
-### Texture palette (v2.2)
-
-GeneArrange assigns gene identities to **12 contrasting colors × 34 distinct vector texture families** (408 base color/texture pairs). The texture assignment is consistent among standard figures, compact figures, collapsed views, and legends. The original first 60 gene styles have not changed; beyond this range, new half-fills, four diagonal half-fills, horizontal/vertical hatching, grids, crosshatching, dots, checkerboards, diamonds, waves, dashes, and geometric marks replace the old repeated-cross fallback. Beyond 408 identities, density variants are generated instead of repeating the cross motif. Very small compact stripes can visually reduce pattern distinction; zoom into the SVG or use its gene legend as needed.
 
 ### Interpreting distances
 
@@ -203,7 +200,3 @@ Exact structure groups compare signed adjacency signatures, but in subset mode a
 6. The exact signed-inversion search is computationally expensive for very large marker sets. SVG diagrams with hundreds or thousands of genes will also be difficult to interpret without further block-level visualization.
 7. `--topology` is intentionally **mandatory** and overrides the topology recorded in the GenBank file. Choose the actual molecular topology carefully; the software does not validate it from sequence evidence.
 8. Gene-array arrows display only named genes permitted by the requested plotting filter; differences in intergenic distances are not scaled or analyzed. Multipart genes are represented by one positional symbol, not exon-accurate geometry.
-
-## Version and continuity
-
-**GeneArrange v2.2** expands the vector texture palette to **34 texture families × 12 colors = 408 base combinations**, fixing a v2.1 bug that repeated the final cross texture for every gene after index 60. The first 60 gene styles preserve their previous appearance. Patterns now include four diagonal half-fills, additional straight halves, stripes, grids, dots, checkerboards, diamonds, chevrons, zigzags, waves, and other geometric motifs. Both compact and standard SVGs use the same identity mapping with tile sizes adapted to the figure. For datasets larger than 408 identities, density variants are generated rather than clamping to the cross pattern. All topology, comparison, subset, and plot filtering logic from v2.1 is retained.
