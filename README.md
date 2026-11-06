@@ -27,12 +27,6 @@ MitoArrange compares **gene content, circular gene order, and gene orientation**
    python -m pip install biopython
    ```
 
-   Alternatively, if you have cloned the repository:
-
-   ```bash
-   python -m pip install -r requirements.txt
-   ```
-
 3. Download `mitoarrange.py` from this repository and run:
 
    ```bash
