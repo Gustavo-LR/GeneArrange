@@ -2,7 +2,7 @@
 
 **Annotation-based comparison and visualization of gene organization in linear and circular DNA molecules.**
 
-GeneArrange is the general-purpose successor to **MitoArrange**. It compares annotated **gene identity, order, orientation and extremity adjacencies** across DNA sequences, including organelle genomes, plasmids, bacterial chromosomes and individual nuclear chromosomes. It groups equivalent arrangements, quantifies changed gene junctions, searches for candidate single-block signed inversions, and generates publication-oriented SVG figures and tabular results.
+GeneArrange compares annotated **gene identity, order, orientation and extremity adjacencies** across DNA sequences, including organelle genomes, plasmids, bacterial chromosomes and individual nuclear chromosomes. It groups equivalent arrangements, quantifies changed gene junctions, searches for candidate single-block signed inversions, and generates publication-oriented SVG figures and tabular results.
 
 GeneArrange compares **annotations**, not DNA alignments: it does **not** call base-pair-resolution structural variants, validate genome assemblies, detect unannotated rearrangements, or infer chromosome rearrangement histories. Use validated, homologous gene identifiers for biologically meaningful comparisons.
 
