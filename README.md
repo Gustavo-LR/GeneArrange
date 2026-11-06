@@ -2,7 +2,7 @@
 
 **Annotation-based comparison and visualization of gene organization in linear and circular DNA molecules.**
 
-GeneArrange compares annotated **gene identity, order, orientation and extremity adjacencies** across DNA sequences, including organelle genomes, plasmids, bacterial chromosomes and individual nuclear chromosomes. It groups equivalent arrangements, quantifies changed gene junctions, searches for candidate single-block signed inversions, and generates publication-oriented SVG figures and tabular results.
+GeneArrange is the general-purpose successor to **MitoArrange**. By default, it compares annotated **gene identity, order, orientation and extremity adjacencies** across DNA sequences, including organelle genomes, plasmids, bacterial chromosomes and individual nuclear chromosomes. It groups equivalent arrangements, quantifies changed gene junctions, searches for candidate single-block signed inversions, and generates publication-oriented SVG figures and tabular results. With `--no_cluster`, it instead **only visualizes annotated genes**, without requiring any genes shared among input records.
 
 GeneArrange compares **annotations**, not DNA alignments: it does **not** call base-pair-resolution structural variants, validate genome assemblies, detect unannotated rearrangements, or infer chromosome rearrangement histories. Use validated, homologous gene identifiers for biologically meaningful comparisons.
 
@@ -10,7 +10,7 @@ GeneArrange compares **annotations**, not DNA alignments: it does **not** call b
 
 - Python 3.10 or newer
 - [Biopython](https://biopython.org/)
-- Two or more GenBank files (`.gb`, `.gbk`, `.gbf`, `.genbank`), with **one sequence record per file**
+- Two or more GenBank files for structural comparison, or **one or more** for `--no_cluster` (`.gb`, `.gbk`, `.gbf`, `.genbank`), with **one sequence record per file**
 - Gene features with `/gene` annotations. Features with only `/locus_tag` are not recognized in this version.
 
 Install the dependency:
@@ -19,7 +19,7 @@ Install the dependency:
 python -m pip install biopython
 ```
 
-Run `python genearrange.py --help` for all options. Input may be a single GenBank file, a directory searched recursively, or a ZIP archive; comparisons require at least two records/files.
+Run `python genearrange.py --help` for all options. Input may be a single GenBank file, a directory searched recursively, or a ZIP archive. The `--topology linear|circular` argument is **always required**.
 
 ## Quick start
 
@@ -43,18 +43,31 @@ python genearrange.py -i circular_genomes/ -o results_circular/ --topology circu
 python genearrange.py -i chromosomes/ -o results_linear/ --topology linear
 ```
 
-`--start-gene` is **not permitted** in linear mode. Gene order is never rotated across physical chromosome ends. For consistent SVGs, GeneArrange chooses the lexicographically canonical direction between the annotated forward order and its whole-molecule reverse complement. This decision changes **display direction only**, not the inferred structure.
+`--start-gene` is not permitted in **linear comparison mode**. Gene order is never rotated across physical chromosome ends. For consistent clustered SVGs, GeneArrange chooses the lexicographically canonical direction between the annotated forward order and its whole-molecule reverse complement. This decision changes **display direction only**, not the inferred structure. In linear **`--no_cluster`** mode, `--start-gene` is permitted as an **orientation cue**, but cannot move that gene to the beginning without misrepresenting the physical molecule.
+
+### Visualization without structural grouping (`--no_cluster`)
+
+Use `--no_cluster` when you want **only the gene-arrangement illustration** and no breakpoint distances, structural groups, representative selection, or similarity sorting. This is useful for poorly annotated genomes, records with fewer than three genes, or molecules with **no overlapping gene names**. One input record is sufficient.
+
+```bash
+python genearrange.py -i genomes/ -o results_visual/ --topology circular --no_cluster --plot all
+```
+
+By default, GeneArrange searches the **plotted gene names shared by every accession** for a gene with exactly one copy and a known strand in every record. It prioritizes `cox1` when available, otherwise takes the alphabetically first suitable name. The chosen gene defines a shared display origin and orientation for **circular molecules**; for **linear molecules**, it defines an orientation but does not rotate the physical ends. An explicit `--start-gene` overrides automatic anchor selection. If an anchor is unavailable or ambiguous in an accession, that accession follows its original GenBank orientation and the program emits a warning. If no suitable shared gene exists, **every accession is drawn in its original GenBank annotation order**.
+
+```bash
+python genearrange.py -i chromosomes/ -o results_visual/ --topology linear --no_cluster --start-gene dnaA --plot multicopy
+```
+
+In `--no_cluster`, `--plot default` means **single-copy, contiguous, known-strand genes within each accession**; unlike comparative mode, these genes do *not* need to be shared with other accessions or meet `--min_gene_presence`. `--plot multicopy`, `--plot all`, `--gene` and `--gene_file` also work, including the existing explicit multicopy override. When `--no_cluster` is present, grouping options and breakpoint thresholds are ignored with a warning. Rows follow alphabetical accession order, and the only figure is `overview.svg`.
 
 ### Choose which annotated genes appear in the figures (`--plot`)
 
-**The plotting filter is separate from the comparison filter.** All gene-order
-comparisons, breakpoint distances, exact structural groups, similarity clusters,
-and seriation remain based exclusively on eligible **single-copy, contiguous,
-known-strand** marker genes, regardless of `--plot`.
+**The plotting filter is separate from the comparison filter.** When comparison is enabled, all gene-order comparisons, breakpoint distances, exact structural groups, similarity clusters, and seriation remain based exclusively on eligible **single-copy, contiguous, known-strand** marker genes, regardless of `--plot`. When `--no_cluster` is selected, **no comparison is performed**.
 
-| `--plot` value | Gene features shown in overview, collapsed, group, and compact SVGs |
+| `--plot` value | Gene features shown in compact SVGs |
 | --- | --- |
-| `default` (default) | Original behavior: retained unique-copy, non-spliced comparison markers, subject to the normal presence cutoff |
+| `default` (default) | Comparison mode: retained unique-copy, non-spliced comparison markers, subject to the normal presence cutoff. `--no_cluster`: locally single-copy, contiguous, known-strand annotations, without a cross-sample presence requirement. |
 | `multicopy` | All annotated non-spliced genes, **including every copy** of repeated gene names and genes below the presence cutoff. Two-part circular-origin joins are treated as contiguous in circular mode. |
 | `all` | All named GenBank `gene` features, including repeated, multipart/spliced, and unknown-strand annotations. |
 
@@ -109,7 +122,7 @@ python genearrange.py -i chromosomes/ -o results_subset/ --topology linear --gen
 - **Explicitly selecting a multicopy gene always plots every one of its copies**, even with `--plot default` and even if a particular copy is multipart. GeneArrange emits a warning and continues; repeated names remain **excluded from comparison**.
 - When a gene subset is supplied, `--min_gene_presence` is ignored for comparison-marker eligibility. Multicopy, multipart (except a two-part circular-origin join), and unknown-strand names still cannot become comparison markers. `--plot all` may show excluded single-copy multipart features as well.
 - **Exact structure (S) groups use the selected genes shared by all accessions** so that annotations missing in one accession do not force that accession into a separate group. Pairwise distances, similarity grouping and similarity display ordering project each pair onto its own shared annotated marker set.
-- At least **three eligible requested genes must be shared by every accession** for exact structural grouping. A subset that does not meet this requirement produces a clear error; select additional shared markers. Selected names not annotated anywhere are reported in `excluded_genes.tsv` / `gene_presence.tsv`.
+- In comparison mode, at least **three eligible requested genes must be shared by every accession** for exact structural grouping. `--no_cluster` has **no minimum number of shared genes**. Selected names not annotated anywhere are reported in `statistics/excluded_genes.tsv` / `statistics/gene_presence.tsv` in comparison mode.
 - Missing genes are **not counted as gene-order breakpoints**; gene content differences must be interpreted separately from comparisons of their shared gene order.
 
 Without a subset argument, the original *comparison* selection behavior is preserved: all annotated genes are candidates and `--min_gene_presence 1.0` requires presence in every accession. Use `--min_gene_presence 0.8` to admit markers present in at least 80% of records. Non-default `--plot` values can display genes below that threshold without promoting them to structural markers.
@@ -163,26 +176,55 @@ A marker set should consist of **orthologous genes with consistent annotation na
 
 ## Outputs
 
-GeneArrange creates `genearrange_results/` unless `-o` selects another directory. The main outputs are:
+**Compact SVGs are now the only figure format.** The former `_compact_view.svg` suffix has been removed because the compact presentation is the standard. The previous full-size, gene-labeled SVGs are no longer generated. Every `.tsv` report is placed in **`statistics/`**, rather than the top-level results directory.
 
-| File | Contents |
-| --- | --- |
-| `overview.svg`, `overview_compact_view.svg` | All accessions, gene-level and compact views |
-| `overview_collapsed.svg`, `overview_collapsed_compact_view.svg` | One representative per visualization group |
-| `individual_image_groups/*.svg` | Per-group figures, plus compact counterparts |
-| `samples.tsv` | Input accession metadata, explicit topology and normalized display direction |
-| `gene_order.tsv`, `retained_genes.tsv` | **Comparison markers only**, per accession and across the dataset |
-| `plotted_gene_order.tsv` | Every **displayed occurrence**, including duplicate-copy index, feature coordinates, parts, strand, and whether its name is a comparison marker |
-| `gene_presence.tsv`, `excluded_genes.tsv` | Marker presence and why candidates were removed |
-| `reference_comparisons.tsv`, `pairwise_comparisons.tsv` | Changed signed adjacencies and conserved blocks |
-| `changed_junctions.tsv`, `exact_inversions.tsv`, `pairwise_blocks.tsv` | Candidate rearrangement descriptions |
-| `breakpoint_distance_matrix.tsv`, `breakpoint_distance_pairs.tsv` | All-to-all distance matrix and normalized distances |
-| `cluster_membership.tsv`, `cluster_summary.tsv` | Visualization group membership, representatives and thresholds |
-| `display_order.tsv`, `visualization_groups.tsv` | Reproducible SVG row order and grouping |
-| `README_results.md` | Run-specific parameters, tables and interpretation caveats |
+### Standard comparison run
 
-The diagrams are **schematic, not proportional to base-pair coordinates**. Standard views display named gene arrows; compact views merge adjacent same-strand features and show gene identity through colored/texture stripes. Each repeated copy occupies its actual relative place among neighboring annotations. Styles are consistent across all figures of one run. The palette supports 34 vector texture families combined with 12 colors, for 408 base combinations before density variations. Unknown-strand features use a neutral rectangle.
+```text
+results/
+├── overview.svg                       # All accessions, compact style
+├── overview_collapsed.svg             # One representative per group
+├── individual_image_groups/
+│   ├── S01.svg                        # Compact-only per-group figures
+│   └── ...
+├── statistics/
+│   ├── samples.tsv
+│   ├── retained_genes.tsv
+│   ├── gene_order.tsv
+│   ├── plotted_gene_order.tsv
+│   ├── gene_presence.tsv
+│   ├── excluded_genes.tsv
+│   ├── reference_comparisons.tsv
+│   ├── pairwise_comparisons.tsv
+│   ├── pairwise_blocks.tsv
+│   ├── changed_junctions.tsv
+│   ├── exact_inversions.tsv
+│   ├── all_pairs.tsv
+│   ├── breakpoint_distance_matrix.tsv
+│   ├── breakpoint_distance_pairs.tsv
+│   ├── display_order.tsv
+│   ├── visualization_groups.tsv
+│   ├── cluster_membership.tsv
+│   └── cluster_summary.tsv
+└── README_results.md
+```
 
+### Visualization-only run (`--no_cluster`)
+
+```text
+results/
+├── overview.svg                       # All accessions, compact style
+├── statistics/
+│   ├── samples.tsv                    # Accession and anchor metadata
+│   ├── plotted_gene_order.tsv         # Every displayed occurrence and its coordinates
+│   ├── gene_presence.tsv              # Gene presence and total annotated copies
+│   └── display_order.tsv              # Figure row positions
+└── README_results.md
+```
+
+No comparison-specific statistics, collapsed figures or individual-group figures are created in `--no_cluster` mode. Reusing an existing output directory automatically removes obsolete **GeneArrange-generated** SVGs and stale TSV reports from previous runs, including earlier `_compact_view.svg` names. Other unrelated files are not deleted.
+
+**Figure interpretation:** compact SVGs merge adjacent same-strand gene features into arrows. Their internal colored and patterned stripes show gene identities; repeated genes retain their original genomic positions. Diagrams are schematics of gene order, **not proportional to base pairs**. Unknown-strand features use rectangles and multipart genes are shown once at a representative annotated position.
 
 ### Interpreting distances
 
